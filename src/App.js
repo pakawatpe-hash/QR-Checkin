@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import QRCode from "react-qr-code";
 import { Html5Qrcode } from "html5-qrcode";
 
-// --- Firebase Imports ---
 import { initializeApp } from "firebase/app";
 import {
   getFirestore,
@@ -26,12 +25,9 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithPopup,
   sendPasswordResetEmail,
 } from "firebase/auth";
 
-// --- Config ของคุณ ---
 const firebaseConfig = {
   apiKey: "AIzaSyBWSz3ZEZ-gzTVCKvflB43Kx2UMoouF8JE",
   authDomain: "checkinsystem-58299.firebaseapp.com",
@@ -41,13 +37,10 @@ const firebaseConfig = {
   appId: "1:514481199105:web:c803a5debdafe6c9528800",
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
 
-// --- Styles ---
 const colors = {
   primary: "#6C63FF",
   primaryLight: "#EEEDFF",
@@ -59,7 +52,6 @@ const colors = {
   white: "#FFFFFF",
   text: "#2D3748",
   gray: "#A0AEC0",
-  google: "#DB4437",
 };
 
 const logoPath = "/logo.jpg";
@@ -68,30 +60,38 @@ const GlobalStyle = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap');
     body { margin: 0; padding: 0; background: ${colors.background}; font-family: 'Prompt', sans-serif; -webkit-font-smoothing: antialiased; }
-    .spinner { width: 50px; height: 50px; border: 5px solid ${colors.primaryLight}; border-top: 5px solid ${colors.primary}; border-radius: 50%; animation: spin 1s linear infinite; }
+    
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .spinner { width: 50px; height: 50px; border: 5px solid ${colors.primaryLight}; border-top: 5px solid ${colors.primary}; border-radius: 50%; animation: spin 1s linear infinite; }
+
     .app-container { display: flex; min-height: 100vh; }
     .main-content { flex: 1; padding: 20px; padding-bottom: 80px; max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box; }
     .sidebar { width: 280px; background: white; padding: 24px; display: flex; flex-direction: column; border-right: 1px solid #E2E8F0; position: sticky; top: 0; height: 100vh; box-sizing: border-box; }
     .mobile-nav { display: none; }
     .scanner-box { width: 100%; max-width: 350px; margin: 0 auto; border-radius: 24px; overflow: hidden; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.1); background: black; aspect-ratio: 1/1; }
     .card { background: white; border-radius: 20px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #EFF2F7; }
+    
     .tab-btn { flex: 1; padding: 10px; border: none; background: none; font-family: 'Prompt'; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; white-space: nowrap; font-size: 0.9rem; }
     .tab-btn.active { border-bottom: 3px solid ${colors.primary}; color: ${colors.primary}; }
+    
     .history-item, .student-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
     .history-item:last-child, .student-item:last-child { border-bottom: none; }
+    
     .edit-form { background: #f0f2f5; padding: 15px; border-radius: 12px; margin-top: 20px; animation: fadeIn 0.3s; }
     .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 15px; width: 100%; margin-bottom: 20px; }
     .stat-card { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; border: 1px solid #eee; }
     .stat-number { font-size: 1.5rem; font-weight: 700; color: ${colors.secondary}; }
     .stat-label { font-size: 0.8rem; color: ${colors.gray}; }
+
     .custom-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(3px); animation: fadeIn 0.2s; }
     .custom-modal { background: white; padding: 30px; border-radius: 24px; width: 90%; max-width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); text-align: center; animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-origin: bottom; }
     @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideUp { from { transform: translateY(20px) scale(0.9); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+
     .delete-btn { background: #FFEBEE; color: #FF5252; border: none; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: 0.2s; }
     .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; color: white; display: inline-block; min-width: 60px; text-align: center; }
+
     @media (max-width: 768px) {
       .app-container { flex-direction: column; }
       .sidebar { display: none; }
@@ -236,7 +236,6 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState("login");
   const [authLoading, setAuthLoading] = useState(true);
   const [imageReady, setImageReady] = useState(false);
-  const [pendingGoogleUser, setPendingGoogleUser] = useState(null);
   const [modal, setModal] = useState({
     isOpen: false,
     type: "info",
@@ -285,11 +284,10 @@ export default function App() {
       if (firebaseUser) {
         const docRef = doc(db, "users", firebaseUser.uid);
         const docSnap = await getDoc(docRef);
+
         if (docSnap.exists()) {
           const userData = docSnap.data();
-          // --- FIX: ถ้าโดนแบน (isDeleted = true) ---
           if (userData.isDeleted) {
-            // เตะออกทันที (Sign Out)
             await signOut(auth);
             setUser(null);
             setCurrentPage("login");
@@ -299,13 +297,12 @@ export default function App() {
               "บัญชีของคุณถูกลบออกจากระบบแล้ว"
             );
           } else {
-            // ปกติ
             setUser({ ...firebaseUser, ...userData });
           }
         } else {
-          // ไม่มีข้อมูลใน DB (อาจจะสมัครใหม่)
-          setPendingGoogleUser(firebaseUser);
-          setCurrentPage("google_register");
+          await signOut(auth);
+          setUser(null);
+          setCurrentPage("login");
         }
       } else {
         setUser(null);
@@ -383,16 +380,6 @@ export default function App() {
                 showAlert={showAlert}
               />
             )}
-            {currentPage === "google_register" && pendingGoogleUser && (
-              <GoogleRegisterForm
-                googleUser={pendingGoogleUser}
-                onSuccess={(fullUserData) => {
-                  setUser(fullUserData);
-                  setCurrentPage("login");
-                }}
-                showAlert={showAlert}
-              />
-            )}
           </div>
         </div>
       )}
@@ -403,11 +390,9 @@ export default function App() {
 function DashboardLayout({ user, setUser, onLogout, showAlert }) {
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  // --- Real-time Kick: ถ้าโดนลบตอนกำลังใช้งานอยู่ ให้เด้งออกทันที ---
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
       if (docSnap.exists() && docSnap.data().isDeleted) {
-        // โดนแบนสดๆ ร้อนๆ
         showAlert("error", "Session Expired", "บัญชีของคุณถูกระงับการใช้งาน");
         onLogout();
       }
@@ -1464,7 +1449,6 @@ function TeacherView({ initialView = "dashboard", showAlert }) {
   );
 }
 
-// ... (ส่วน Login/Register/Helper เหมือนเดิม) ...
 function LoginPage({ onSwitch, showAlert }) {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
@@ -1477,14 +1461,6 @@ function LoginPage({ onSwitch, showAlert }) {
       showAlert("error", "เข้าสู่ระบบไม่สำเร็จ", "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
     }
     setLoading(false);
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-      showAlert("error", "Login failed", error.message);
-    }
   };
 
   const handleForgotPassword = () => {
@@ -1538,18 +1514,6 @@ function LoginPage({ onSwitch, showAlert }) {
       >
         {loading ? "..." : "เข้าสู่ระบบ"}
       </button>
-      <div style={{ display: "flex", alignItems: "center", margin: "20px 0" }}>
-        <div style={{ flex: 1, height: 1, background: "#E2E8F0" }}></div>
-        <span
-          style={{ padding: "0 10px", color: colors.gray, fontSize: "0.8rem" }}
-        >
-          หรือ
-        </span>
-        <div style={{ flex: 1, height: 1, background: "#E2E8F0" }}></div>
-      </div>
-      <button style={commonStyles.btnGoogle} onClick={handleGoogleLogin}>
-        <span style={{ fontSize: "1.2rem" }}>G</span> เข้าสู่ระบบด้วย Google
-      </button>
       <p
         style={{
           textAlign: "center",
@@ -1566,96 +1530,6 @@ function LoginPage({ onSwitch, showAlert }) {
           ลงทะเบียน
         </span>
       </p>
-    </div>
-  );
-}
-
-function GoogleRegisterForm({ googleUser, onSuccess, showAlert }) {
-  const [form, setForm] = useState({
-    name: googleUser.displayName || "",
-    role: "student",
-    level: "ปวช.1",
-    studentId: "",
-  });
-  const [loading, setLoading] = useState(false);
-
-  const handleSave = async () => {
-    if (form.role === "student" && !form.studentId)
-      return showAlert("error", "ข้อมูลไม่ครบ", "กรุณากรอกเลขที่");
-    setLoading(true);
-    try {
-      const userData = {
-        name: form.name,
-        email: googleUser.email,
-        role: form.role,
-        isDeleted: false,
-        createdAt: serverTimestamp(),
-      };
-      if (form.role === "student") {
-        userData.level = form.level;
-        userData.studentId = form.studentId;
-      }
-      await setDoc(doc(db, "users", googleUser.uid), userData);
-      onSuccess({ ...googleUser, ...userData });
-    } catch (error) {
-      showAlert("error", "ผิดพลาด", "บันทึกไม่สำเร็จ");
-    }
-    setLoading(false);
-  };
-
-  return (
-    <div style={{ textAlign: "left" }}>
-      <h3 style={{ color: colors.secondary, marginTop: 0 }}>
-        กรอกข้อมูลเพิ่มเติม
-      </h3>
-      <label style={{ fontSize: "0.9rem", fontWeight: 600 }}>ชื่อ-สกุล</label>
-      <input
-        style={commonStyles.input}
-        value={form.name}
-        onChange={(e) => setForm({ ...form, name: e.target.value })}
-      />
-      <label style={{ fontSize: "0.9rem", fontWeight: 600 }}>สถานะ</label>
-      <select
-        style={commonStyles.input}
-        value={form.role}
-        onChange={(e) => setForm({ ...form, role: e.target.value })}
-      >
-        <option value="student">นักเรียน / นักศึกษา</option>
-        <option value="teacher">อาจารย์</option>
-      </select>
-      {form.role === "student" && (
-        <>
-          <label style={{ fontSize: "0.9rem", fontWeight: 600 }}>
-            ระดับชั้น
-          </label>
-          <select
-            style={commonStyles.input}
-            value={form.level}
-            onChange={(e) => setForm({ ...form, level: e.target.value })}
-          >
-            <option value="ปวช.1">ปวช.1</option>
-            <option value="ปวช.2">ปวช.2</option>
-            <option value="ปวช.3">ปวช.3</option>
-            <option value="ปวส.1">ปวส.1</option>
-            <option value="ปวส.2">ปวส.2</option>
-          </select>
-          <label style={{ fontSize: "0.9rem", fontWeight: 600 }}>เลขที่</label>
-          <input
-            style={commonStyles.input}
-            type="number"
-            placeholder="เช่น 15"
-            value={form.studentId}
-            onChange={(e) => setForm({ ...form, studentId: e.target.value })}
-          />
-        </>
-      )}
-      <button
-        style={commonStyles.btnPrimary}
-        onClick={handleSave}
-        disabled={loading}
-      >
-        {loading ? "กำลังบันทึก..." : "ยืนยันข้อมูล"}
-      </button>
     </div>
   );
 }
