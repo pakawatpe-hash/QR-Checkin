@@ -843,16 +843,29 @@ function ScannerComponent({ user, showAlert }) {
       scannerRef.current = html5QrCode;
 
       try {
-        await html5QrCode.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
-          async (decodedText) => {
-            if (isRunningRef.current) {
-              try {
-                await html5QrCode.stop();
-              } catch (e) {}
-              isRunningRef.current = false;
-            }
+            await html5QrCode.start(
+                { facingMode: "environment" },
+                { 
+                    fps: 10, 
+                    
+                    qrbox: (viewfinderWidth, viewfinderHeight) => {
+                       
+                        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                        
+                        const size = Math.floor(minEdge * 0.85);
+                       
+                        return { width: size, height: size };
+                    },
+                    aspectRatio: 1.0 
+                    
+                }, 
+                async (decodedText) => { 
+                    if (isRunningRef.current) {
+                        try { 
+                            await html5QrCode.stop(); 
+                        } catch (e) {}
+                        isRunningRef.current = false;
+                    }
 
             const today = new Date();
             today.setHours(0, 0, 0, 0);
