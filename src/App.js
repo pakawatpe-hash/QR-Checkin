@@ -547,7 +547,7 @@ function DashboardLayout({ user, setUser, onLogout, showAlert }) {
                     marginTop: 20,
                   }}
                 >
-                  *เช็คชื่อก่อน 07:50 น. ถือว่ามาปกติ
+                  *เช็คชื่อก่อน 07:50 น.
                 </p>
                 <div style={{ fontSize: "3rem", marginTop: 10 }}>🎓</div>
               </div>
