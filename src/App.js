@@ -11,7 +11,6 @@ import {
   setDoc,
   getDoc,
   updateDoc,
-  deleteDoc,
   serverTimestamp,
   query,
   where,
@@ -42,69 +41,163 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 const colors = {
-  primary: "#7C3AED", 
+  primary: "#7C3AED",
   primaryLight: "#F5F3FF",
-  primaryGradient: "linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)", 
+  primaryGradient: "linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%)",
+  secondary: "#1F2937",
   success: "#10B981",
-  successLight: "#D1FAE5",
+  successBg: "#D1FAE5",
   warning: "#F59E0B",
-  warningLight: "#FEF3C7",
+  warningBg: "#FEF3C7",
   error: "#EF4444",
-  errorLight: "#FEE2E2",
-  secondary: "#2F2E41",
-  success: "#00C851",
-  warning: "#FF9800",
-  error: "#FF5252",
-  background: "#F8F9FA",
+  errorBg: "#FEE2E2",
+  background: "#F3F4F6",
   white: "#FFFFFF",
-  text: "#2D3748",
-  gray: "#A0AEC0",
+  text: "#374151",
+  textLight: "#6B7280",
+  border: "#E5E7EB",
 };
 
 const logoPath = "/logo.jpg";
 
 const GlobalStyle = () => (
   <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap');
-    body { margin: 0; padding: 0; background: ${colors.background}; font-family: 'Prompt', sans-serif; -webkit-font-smoothing: antialiased; }
+    @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
     
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    body { 
+      margin: 0; 
+      padding: 0; 
+      background: ${colors.background}; 
+      font-family: 'Prompt', sans-serif; 
+      -webkit-font-smoothing: antialiased; 
+      color: ${colors.text};
+    }
+    
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    .spinner { width: 50px; height: 50px; border: 5px solid ${colors.primaryLight}; border-top: 5px solid ${colors.primary}; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes scanLine { 0% { top: 0%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+    
+    .app-container { display: flex; min-height: 100vh; background: ${colors.background}; }
+    
+    .sidebar { 
+      width: 280px; 
+      background: ${colors.white}; 
+      padding: 32px; 
+      display: flex; 
+      flex-direction: column; 
+      border-right: 1px solid ${colors.border}; 
+      position: sticky; 
+      top: 0; 
+      height: 100vh; 
+      z-index: 50;
+      box-shadow: 4px 0 24px rgba(0,0,0,0.02);
+    }
 
-    .app-container { display: flex; min-height: 100vh; }
-    .main-content { flex: 1; padding: 20px; padding-bottom: 80px; max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box; }
-    .sidebar { width: 280px; background: white; padding: 24px; display: flex; flex-direction: column; border-right: 1px solid #E2E8F0; position: sticky; top: 0; height: 100vh; box-sizing: border-box; }
+    .main-content { 
+      flex: 1; 
+      padding: 24px; 
+      padding-bottom: 120px; 
+      max-width: 1000px; 
+      margin: 0 auto; 
+      width: 100%; 
+      animation: fadeIn 0.4s ease-out;
+    }
+
     .mobile-nav { display: none; }
-    .scanner-box { width: 100%; max-width: 350px; margin: 0 auto; border-radius: 24px; overflow: hidden; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.1); background: black; aspect-ratio: 1/1; }
-    .card { background: white; border-radius: 20px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #EFF2F7; }
-    
-    .tab-btn { flex: 1; padding: 10px; border: none; background: none; font-family: 'Prompt'; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; white-space: nowrap; font-size: 0.9rem; }
-    .tab-btn.active { border-bottom: 3px solid ${colors.primary}; color: ${colors.primary}; }
-    
-    .history-item, .student-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
-    .history-item:last-child, .student-item:last-child { border-bottom: none; }
-    
-    .edit-form { background: #f0f2f5; padding: 15px; border-radius: 12px; margin-top: 20px; animation: fadeIn 0.3s; }
-    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 15px; width: 100%; margin-bottom: 20px; }
-    .stat-card { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; border: 1px solid #eee; }
-    .stat-number { font-size: 1.5rem; font-weight: 700; color: ${colors.secondary}; }
-    .stat-label { font-size: 0.8rem; color: ${colors.gray}; }
 
-    .custom-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(3px); animation: fadeIn 0.2s; }
-    .custom-modal { background: white; padding: 30px; border-radius: 24px; width: 90%; max-width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); text-align: center; animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-origin: bottom; }
-    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes slideUp { from { transform: translateY(20px) scale(0.9); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+    .card { 
+      background: ${colors.white}; 
+      border-radius: 24px; 
+      padding: 32px; 
+      box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08); 
+      border: 1px solid ${colors.white};
+    }
 
-    .delete-btn { background: #FFEBEE; color: #FF5252; border: none; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: 0.2s; }
-    .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; color: white; display: inline-block; min-width: 60px; text-align: center; }
+    /* Scanner UI */
+    .scanner-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1/1;
+      margin: 0 auto;
+      border-radius: 24px;
+      overflow: hidden;
+      background: black;
+      box-shadow: 0 20px 50px -12px rgba(0,0,0,0.3);
+    }
+    
+    .scan-overlay {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10;
+      border: 2px solid rgba(255,255,255,0.2); border-radius: 24px; pointer-events: none;
+    }
+    
+    .scan-laser {
+      position: absolute; width: 100%; height: 2px; background: ${colors.success};
+      box-shadow: 0 0 15px ${colors.success}; z-index: 11; animation: scanLine 2s linear infinite;
+    }
+
+    #reader { width: 100%; height: 100%; }
+    #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; border-radius: 24px; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; width: 100%; margin-bottom: 24px; }
+    @media (min-width: 768px) { .stat-grid { grid-template-columns: repeat(4, 1fr); } }
+
+    .stat-card { 
+      background: ${colors.white}; padding: 20px; border-radius: 20px; text-align: center; 
+      border: 1px solid ${colors.border}; transition: transform 0.2s; 
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .stat-card:hover { transform: translateY(-4px); }
+
+    .custom-modal-overlay { 
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); 
+      backdrop-filter: blur(4px); display: flex; alignItems: center; justifyContent: center; z-index: 9999; 
+      animation: fadeIn 0.2s; 
+    }
+    .custom-modal { 
+      background: ${colors.white}; padding: 32px; border-radius: 32px; width: 90%; max-width: 360px; 
+      text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); 
+    }
+
+    .spinner { 
+      width: 48px; height: 48px; border: 4px solid ${colors.primaryLight}; border-top: 4px solid ${colors.primary}; 
+      border-radius: 50%; animation: spin 0.8s linear infinite; 
+    }
+
+    .list-item {
+      display: flex; justify-content: space-between; align-items: center; padding: 16px; margin-bottom: 10px;
+      background: ${colors.white}; border-radius: 16px; border: 1px solid ${colors.border};
+      transition: all 0.2s ease;
+    }
+    .list-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+
+    .tab-container { display: flex; background: ${colors.primaryLight}; padding: 6px; border-radius: 16px; margin-bottom: 24px; }
+    .tab-btn { flex: 1; padding: 10px; border: none; background: transparent; color: ${colors.textLight}; font-weight: 600; border-radius: 12px; cursor: pointer; transition: 0.3s; font-family: 'Prompt'; }
+    .tab-btn.active { background: ${colors.white}; color: ${colors.primary}; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
     @media (max-width: 768px) {
       .app-container { flex-direction: column; }
       .sidebar { display: none; }
-      .main-content { padding: 16px; padding-bottom: 90px; }
-      .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 12px 24px; box-shadow: 0 -4px 20px rgba(0,0,0,0.05); justify-content: space-around; align-items: center; z-index: 1000; border-top-left-radius: 20px; border-top-right-radius: 20px; }
-      .mobile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+      .main-content { padding: 20px; padding-bottom: 120px; }
+      
+      .mobile-nav { 
+        display: flex; position: fixed; bottom: 20px; left: 20px; right: 20px; 
+        background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); 
+        padding: 12px 24px; justify-content: space-between; align-items: center; 
+        z-index: 1000; border-radius: 24px; border: 1px solid rgba(255,255,255,0.5);
+        box-shadow: 0 10px 40px -10px rgba(0,0,0,0.15);
+      }
+      
+      .scan-btn-wrapper {
+        position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
+        background: ${colors.background}; padding: 6px; border-radius: 50%;
+      }
     }
   `}</style>
 );
@@ -117,7 +210,7 @@ const LoadingScreen = () => (
       left: 0,
       right: 0,
       bottom: 0,
-      background: colors.white,
+      background: colors.background,
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -126,7 +219,7 @@ const LoadingScreen = () => (
     }}
   >
     <div className="spinner"></div>
-    <p style={{ marginTop: 20, color: colors.primary, fontWeight: 500 }}>
+    <p style={{ marginTop: 24, color: colors.primary, fontWeight: 600 }}>
       กำลังโหลดข้อมูล...
     </p>
   </div>
@@ -145,7 +238,7 @@ const CustomModal = ({
   if (!isOpen) return null;
 
   let icon = "ℹ️";
-  let confirmColor = colors.primary;
+  let confirmColor = colors.primaryGradient;
   if (type === "success") {
     icon = "✅";
     confirmColor = colors.success;
@@ -162,35 +255,24 @@ const CustomModal = ({
     icon = "❓";
     confirmColor = colors.warning;
   }
-  if (type === "input") {
-    icon = "🔐";
-  }
 
   return (
     <div className="custom-modal-overlay">
       <div className="custom-modal">
-        <div
-          style={{
-            fontSize: "3rem",
-            marginBottom: 15,
-            display: "inline-block",
-          }}
-        >
-          {icon}
-        </div>
+        <div style={{ fontSize: "3.5rem", marginBottom: 16 }}>{icon}</div>
         <h3
           style={{
-            margin: "0 0 10px 0",
+            margin: "0 0 8px 0",
             color: colors.secondary,
-            fontSize: "1.2rem",
+            fontSize: "1.3rem",
           }}
         >
           {title}
         </h3>
         <p
           style={{
-            margin: "0 0 25px 0",
-            color: colors.gray,
+            margin: "0 0 24px 0",
+            color: colors.textLight,
             fontSize: "0.95rem",
             lineHeight: 1.5,
           }}
@@ -199,21 +281,22 @@ const CustomModal = ({
         </p>
         {inputMode && (
           <input
-            style={{ ...commonStyles.input, marginTop: 0, marginBottom: 20 }}
+            style={{ ...commonStyles.input, marginTop: 0, marginBottom: 24 }}
             placeholder="กรอกข้อมูล..."
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             autoFocus
           />
         )}
-        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+        <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
           <button
             style={{
               ...commonStyles.btnPrimary,
               margin: 0,
               background: confirmColor,
               width: "auto",
-              minWidth: 100,
+              minWidth: 110,
+              boxShadow: "none",
             }}
             onClick={() => onConfirm(inputValue)}
           >
@@ -221,12 +304,7 @@ const CustomModal = ({
           </button>
           {(type === "confirm" || onCancel) && (
             <button
-              style={{
-                ...commonStyles.btnSecondary,
-                margin: 0,
-                background: "#eee",
-                color: "#555",
-              }}
+              style={{ ...commonStyles.btnSecondary, margin: 0 }}
               onClick={onCancel}
             >
               ยกเลิก
@@ -291,7 +369,6 @@ export default function App() {
       if (firebaseUser) {
         const docRef = doc(db, "users", firebaseUser.uid);
         const docSnap = await getDoc(docRef);
-
         if (docSnap.exists()) {
           const userData = docSnap.data();
           if (userData.isDeleted) {
@@ -353,27 +430,41 @@ export default function App() {
             alignItems: "center",
             justifyContent: "center",
             padding: 20,
+            background: colors.background,
           }}
         >
           <div
             className="card"
-            style={{ width: "100%", maxWidth: 400, textAlign: "center" }}
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              textAlign: "center",
+              padding: "40px 32px",
+            }}
           >
             <img
               src={logoPath}
               alt="Logo"
-              style={{ height: 80, marginBottom: 20, objectFit: "contain" }}
+              style={{
+                height: 90,
+                marginBottom: 24,
+                objectFit: "contain",
+                borderRadius: 16,
+              }}
             />
             <h2
               style={{
                 color: colors.primary,
-                marginBottom: 30,
-                fontSize: "1.5rem",
-                marginTop: 0,
+                marginBottom: 8,
+                fontSize: "1.75rem",
+                fontWeight: 700,
               }}
             >
               ระบบเช็คชื่อนักศึกษา
             </h2>
+            <p style={{ color: colors.textLight, marginBottom: 32 }}>
+              เข้าสู่ระบบเพื่อจัดการและตรวจสอบการเข้าเรียน
+            </p>
             {currentPage === "login" && (
               <LoginPage
                 onSwitch={() => setCurrentPage("register")}
@@ -414,18 +505,19 @@ function DashboardLayout({ user, setUser, onLogout, showAlert }) {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 15,
-            marginBottom: 40,
+            gap: 16,
+            marginBottom: 48,
           }}
         >
           <img
             src={logoPath}
             alt="Logo"
             style={{
-              height: 50,
-              width: 50,
+              height: 56,
+              width: 56,
               objectFit: "cover",
-              borderRadius: 12,
+              borderRadius: 14,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
             }}
           />
           <div>
@@ -433,7 +525,8 @@ function DashboardLayout({ user, setUser, onLogout, showAlert }) {
               style={{
                 color: colors.primary,
                 margin: 0,
-                fontSize: "1.1rem",
+                fontSize: "1.2rem",
+                fontWeight: 700,
                 lineHeight: 1.2,
               }}
             >
@@ -460,11 +553,14 @@ function DashboardLayout({ user, setUser, onLogout, showAlert }) {
         <div
           style={{
             cursor: "pointer",
-            color: "#FF5252",
-            padding: 12,
+            color: colors.error,
+            padding: "12px 16px",
             display: "flex",
-            gap: 10,
-            fontWeight: 500,
+            gap: 12,
+            fontWeight: 600,
+            marginTop: "auto",
+            background: colors.errorBg,
+            borderRadius: 12,
           }}
           onClick={onLogout}
         >
@@ -473,16 +569,25 @@ function DashboardLayout({ user, setUser, onLogout, showAlert }) {
       </div>
 
       <div className="main-content">
-        <div className="mobile-header">
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div
+          className="mobile-header"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 24,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <img
               src={logoPath}
               alt="Logo"
               style={{
-                height: 40,
-                width: 40,
+                height: 48,
+                width: 48,
                 objectFit: "cover",
-                borderRadius: 8,
+                borderRadius: 12,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
               }}
             />
             <div>
@@ -491,36 +596,27 @@ function DashboardLayout({ user, setUser, onLogout, showAlert }) {
                   margin: 0,
                   fontSize: "1.1rem",
                   color: colors.secondary,
+                  fontWeight: 700,
                 }}
               >
-                ระบบเช็คชื่อนักศึกษา
+                ระบบเช็คชื่อ
               </h2>
-              <span style={{ fontSize: "0.8rem", color: colors.gray }}>
-                สวัสดี, {user.name || user.email}
+              <span style={{ fontSize: "0.85rem", color: colors.textLight }}>
+                สวัสดี, {user.name || "User"}
               </span>
-              {user.role === "student" && (
-                <span
-                  style={{
-                    display: "block",
-                    fontSize: "0.7rem",
-                    color: colors.primary,
-                  }}
-                >
-                  ระดับ: {user.level} เลขที่: {user.studentId}
-                </span>
-              )}
             </div>
           </div>
           <div
             style={{
-              width: 40,
-              height: 40,
+              width: 44,
+              height: 44,
               background: colors.primaryLight,
+              color: colors.primary,
               borderRadius: "50%",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "1.2rem",
+              fontSize: "1.4rem",
             }}
           >
             {user.role === "teacher" ? "👩‍🏫" : "👨‍🎓"}
@@ -530,41 +626,87 @@ function DashboardLayout({ user, setUser, onLogout, showAlert }) {
         <div
           className="card"
           style={{
-            minHeight: 400,
+            minHeight: "65vh",
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
-            justifyContent:
-              activeTab === "dashboard" ? "flex-start" : "flex-start",
+            padding:
+              user.role === "teacher" && activeTab === "dashboard"
+                ? "24px"
+                : "32px",
           }}
         >
           {activeTab === "dashboard" ? (
             user.role === "teacher" ? (
               <TeacherView initialView="dashboard" showAlert={showAlert} />
             ) : (
-              <div style={{ textAlign: "center", marginTop: 50 }}>
-                <h3 style={{ color: colors.primary }}>ยินดีต้อนรับ!</h3>
-                <p style={{ color: colors.gray }}>
-                  เลือกเมนู "สแกนเข้าเรียน" เพื่อเริ่มเช็คชื่อ
-                </p>
-                <p
+              <div style={{ textAlign: "center", marginTop: 60, padding: 20 }}>
+                <div
                   style={{
-                    color: colors.error,
-                    fontSize: "0.9rem",
-                    marginTop: 20,
+                    width: 96,
+                    height: 96,
+                    background: colors.primaryLight,
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 24px",
+                    fontSize: "3rem",
                   }}
                 >
-                  *เช็คชื่อก่อน 07:50 น. ถือว่ามาปกติ
+                  🎓
+                </div>
+                <h2
+                  style={{
+                    color: colors.primary,
+                    marginBottom: 12,
+                    fontSize: "1.6rem",
+                  }}
+                >
+                  ยินดีต้อนรับ!
+                </h2>
+                <p
+                  style={{
+                    color: colors.textLight,
+                    maxWidth: 320,
+                    margin: "0 auto",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  เลือกเมนู <b>"สแกนเข้าเรียน"</b>{" "}
+                  ด้านล่างเพื่อเริ่มเช็คชื่อประจำวัน
                 </p>
-                <div style={{ fontSize: "3rem", marginTop: 10 }}>🎓</div>
+                <div
+                  style={{
+                    marginTop: 32,
+                    padding: "16px 24px",
+                    background: colors.warningBg,
+                    borderRadius: 16,
+                    color: "#B45309",
+                    display: "inline-block",
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  ⏰ เช็คชื่อก่อน 07:50 น. ถือว่ามาปกติ
+                </div>
               </div>
             )
           ) : (
             <>
-              <h3 style={{ marginBottom: 20, color: colors.primary }}>
+              <h3
+                style={{
+                  marginBottom: 24,
+                  color: colors.secondary,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  fontSize: "1.3rem",
+                  fontWeight: 700,
+                }}
+              >
                 {user.role === "teacher"
-                  ? "QR Code & จัดการ"
-                  : "เช็คชื่อ & ประวัติ"}
+                  ? "📷 QR Code & จัดการ"
+                  : "📷 เช็คชื่อ & ประวัติ"}
               </h3>
               {user.role === "teacher" ? (
                 <TeacherView initialView="list" showAlert={showAlert} />
@@ -587,24 +729,26 @@ function DashboardLayout({ user, setUser, onLogout, showAlert }) {
           active={activeTab === "dashboard"}
           onClick={() => setActiveTab("dashboard")}
         />
-        <div
-          onClick={() => setActiveTab("checkin")}
-          style={{
-            width: 60,
-            height: 60,
-            background: colors.primary,
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "white",
-            fontSize: "1.8rem",
-            marginTop: -40,
-            boxShadow: "0 8px 20px rgba(108, 99, 255, 0.4)",
-            border: "4px solid white",
-          }}
-        >
-          📷
+        <div className="scan-btn-wrapper">
+          <div
+            onClick={() => setActiveTab("checkin")}
+            style={{
+              width: 64,
+              height: 64,
+              background: colors.primaryGradient,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "white",
+              fontSize: "1.8rem",
+              boxShadow: "0 10px 25px rgba(124, 58, 237, 0.4)",
+              cursor: "pointer",
+              transition: "transform 0.2s",
+            }}
+          >
+            📷
+          </div>
         </div>
         <MobileNavItem icon="🚪" label="ออก" onClick={onLogout} />
       </div>
@@ -632,21 +776,17 @@ function StudentView({ user, setUser, showAlert }) {
       const unsubscribe = onSnapshot(
         q,
         (snapshot) => {
-          const logs = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-          setHistory(logs);
+          setHistory(
+            snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+          );
         },
         (error) => {
-          console.error(error);
-          if (error.message.includes("index")) {
+          if (error.message.includes("index"))
             showAlert(
               "error",
               "ระบบขัดข้อง",
               "กรุณาแจ้งอาจารย์: ขาด Index ประวัติ"
             );
-          }
         }
       );
       return () => unsubscribe();
@@ -679,60 +819,71 @@ function StudentView({ user, setUser, showAlert }) {
         alignItems: "center",
       }}
     >
-      <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+      <div className="tab-container" style={{ width: "100%" }}>
         <button
-          style={{
-            ...commonStyles.btnSmall,
-            background: viewState === "scan" ? colors.primary : "#eee",
-            color: viewState === "scan" ? "white" : "#555",
-          }}
+          className={`tab-btn ${viewState === "scan" ? "active" : ""}`}
           onClick={() => setViewState("scan")}
         >
           สแกน
         </button>
         <button
-          style={{
-            ...commonStyles.btnSmall,
-            background: viewState === "history" ? colors.primary : "#eee",
-            color: viewState === "history" ? "white" : "#555",
-          }}
+          className={`tab-btn ${viewState === "history" ? "active" : ""}`}
           onClick={() => setViewState("history")}
         >
           ประวัติ
         </button>
         <button
-          style={{
-            ...commonStyles.btnSmall,
-            background: viewState === "edit" ? colors.primary : "#eee",
-            color: viewState === "edit" ? "white" : "#555",
-          }}
+          className={`tab-btn ${viewState === "edit" ? "active" : ""}`}
           onClick={() => setViewState("edit")}
         >
-          แก้ไขข้อมูล
+          ข้อมูล
         </button>
       </div>
+
       {viewState === "scan" && (
         <ScannerComponent user={user} showAlert={showAlert} />
       )}
+
       {viewState === "history" && (
         <div
           style={{
             width: "100%",
-            maxHeight: 300,
+            maxHeight: 400,
             overflowY: "auto",
-            background: "#f9f9f9",
-            borderRadius: 10,
+            paddingRight: 4,
           }}
         >
           {history.length === 0 ? (
-            <p style={{ textAlign: "center", padding: 20, color: colors.gray }}>
+            <div
+              style={{
+                textAlign: "center",
+                padding: 40,
+                color: colors.textLight,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "2.5rem",
+                  display: "block",
+                  marginBottom: 12,
+                }}
+              >
+                📭
+              </span>
               ยังไม่มีประวัติการเช็คชื่อ
-            </p>
+            </div>
           ) : (
             history.map((log) => (
-              <div key={log.id} className="history-item">
+              <div key={log.id} className="list-item">
                 <div>
-                  <span style={{ display: "block", fontSize: "0.85rem" }}>
+                  <span
+                    style={{
+                      display: "block",
+                      fontSize: "0.85rem",
+                      color: colors.textLight,
+                      marginBottom: 4,
+                    }}
+                  >
                     {log.timestamp
                       ? log.timestamp.toDate().toLocaleDateString("th-TH")
                       : "-"}{" "}
@@ -745,7 +896,13 @@ function StudentView({ user, setUser, showAlert }) {
                           })
                       : "-"}
                   </span>
-                  <span style={{ fontWeight: 600, color: colors.primary }}>
+                  <span
+                    style={{
+                      fontWeight: 600,
+                      color: colors.secondary,
+                      fontSize: "1rem",
+                    }}
+                  >
                     {log.subjectCode}
                   </span>
                 </div>
@@ -753,17 +910,25 @@ function StudentView({ user, setUser, showAlert }) {
                   {log.status === "late" ? (
                     <span
                       style={{
-                        ...commonStyles.statusBadge,
-                        background: colors.warning,
+                        background: colors.warningBg,
+                        color: colors.warning,
+                        padding: "4px 12px",
+                        borderRadius: 20,
+                        fontSize: "0.8rem",
+                        fontWeight: 600,
                       }}
                     >
-                      สาย
+                      มาสาย
                     </span>
                   ) : (
                     <span
                       style={{
-                        ...commonStyles.statusBadge,
-                        background: colors.success,
+                        background: colors.successBg,
+                        color: colors.success,
+                        padding: "4px 12px",
+                        borderRadius: 20,
+                        fontSize: "0.8rem",
+                        fontWeight: 600,
                       }}
                     >
                       ทันเวลา
@@ -775,9 +940,18 @@ function StudentView({ user, setUser, showAlert }) {
           )}
         </div>
       )}
+
       {viewState === "edit" && (
-        <div className="edit-form" style={{ width: "100%" }}>
-          <label style={{ fontSize: "0.9rem", fontWeight: 600 }}>
+        <div style={{ width: "100%", padding: 8 }}>
+          <label
+            style={{
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              color: colors.secondary,
+              marginBottom: 6,
+              display: "block",
+            }}
+          >
             ชื่อ-สกุล
           </label>
           <input
@@ -785,31 +959,57 @@ function StudentView({ user, setUser, showAlert }) {
             value={editForm.name}
             onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
           />
-          <label style={{ fontSize: "0.9rem", fontWeight: 600 }}>
-            ระดับชั้น
-          </label>
-          <select
-            style={commonStyles.input}
-            value={editForm.level}
-            onChange={(e) =>
-              setEditForm({ ...editForm, level: e.target.value })
-            }
+          <div
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
           >
-            <option value="ปวช.1">ปวช.1</option>
-            <option value="ปวช.2">ปวช.2</option>
-            <option value="ปวช.3">ปวช.3</option>
-            <option value="ปวส.1">ปวส.1</option>
-            <option value="ปวส.2">ปวส.2</option>
-          </select>
-          <label style={{ fontSize: "0.9rem", fontWeight: 600 }}>เลขที่</label>
-          <input
-            style={commonStyles.input}
-            type="number"
-            value={editForm.studentId}
-            onChange={(e) =>
-              setEditForm({ ...editForm, studentId: e.target.value })
-            }
-          />
+            <div>
+              <label
+                style={{
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  color: colors.secondary,
+                  marginBottom: 6,
+                  display: "block",
+                }}
+              >
+                ระดับชั้น
+              </label>
+              <select
+                style={commonStyles.input}
+                value={editForm.level}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, level: e.target.value })
+                }
+              >
+                {["ปวช.1", "ปวช.2", "ปวช.3", "ปวส.1", "ปวส.2"].map((l) => (
+                  <option key={l} value={l}>
+                    {l}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label
+                style={{
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  color: colors.secondary,
+                  marginBottom: 6,
+                  display: "block",
+                }}
+              >
+                เลขที่
+              </label>
+              <input
+                style={commonStyles.input}
+                type="number"
+                value={editForm.studentId}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, studentId: e.target.value })
+                }
+              />
+            </div>
+          </div>
           <button
             style={commonStyles.btnPrimary}
             onClick={handleUpdateProfile}
@@ -830,10 +1030,8 @@ function ScannerComponent({ user, showAlert }) {
 
   useEffect(() => {
     if (status === "success") return;
-
     const timeoutId = setTimeout(async () => {
       if (!document.getElementById("reader")) return;
-
       if (scannerRef.current) {
         if (isRunningRef.current) {
           try {
@@ -845,38 +1043,29 @@ function ScannerComponent({ user, showAlert }) {
           await scannerRef.current.clear();
         } catch (e) {}
       }
-
       const html5QrCode = new Html5Qrcode("reader");
       scannerRef.current = html5QrCode;
-
       try {
-            await html5QrCode.start(
-                { facingMode: "environment" },
-                { 
-                    fps: 10, 
-                    
-                    qrbox: (viewfinderWidth, viewfinderHeight) => {
-                       
-                        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                        
-                        const size = Math.floor(minEdge * 0.85);
-                       
-                        return { width: size, height: size };
-                    },
-                    aspectRatio: 1.0 
-                    
-                }, 
-                async (decodedText) => { 
-                    if (isRunningRef.current) {
-                        try { 
-                            await html5QrCode.stop(); 
-                        } catch (e) {}
-                        isRunningRef.current = false;
-                    }
-
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: (w, h) => {
+              const min = Math.min(w, h);
+              const size = Math.floor(min * 0.75);
+              return { width: size, height: size };
+            },
+            aspectRatio: 1.0,
+          },
+          async (decodedText) => {
+            if (isRunningRef.current) {
+              try {
+                await html5QrCode.stop();
+              } catch (e) {}
+              isRunningRef.current = false;
+            }
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-
             try {
               const q = query(
                 collection(db, "attendance_logs"),
@@ -884,7 +1073,6 @@ function ScannerComponent({ user, showAlert }) {
                 where("timestamp", ">=", today)
               );
               const snap = await getDocs(q);
-
               if (!snap.empty) {
                 showAlert(
                   "warning",
@@ -899,7 +1087,6 @@ function ScannerComponent({ user, showAlert }) {
               const limit = new Date();
               limit.setHours(7, 50, 0, 0);
               const isLate = now > limit;
-              const statusText = isLate ? "late" : "present";
 
               setStatus("success");
               await addDoc(collection(db, "attendance_logs"), {
@@ -908,23 +1095,14 @@ function ScannerComponent({ user, showAlert }) {
                 level: user.level || "-",
                 studentId: user.studentId || "-",
                 subjectCode: decodedText,
-                status: statusText,
+                status: isLate ? "late" : "present",
                 timestamp: serverTimestamp(),
               });
               showAlert("success", "สำเร็จ", "เช็คชื่อเรียบร้อยแล้ว!", () =>
                 setStatus("success")
               );
             } catch (err) {
-              console.error(err);
-              if (err.message.includes("requires an index")) {
-                showAlert(
-                  "error",
-                  "ระบบขัดข้อง",
-                  "กรุณาแจ้งอาจารย์ให้สร้าง Database Index"
-                );
-              } else {
-                showAlert("error", "ผิดพลาด", err.message);
-              }
+              showAlert("error", "ผิดพลาด", err.message);
               setStatus("idle");
             }
           },
@@ -933,16 +1111,15 @@ function ScannerComponent({ user, showAlert }) {
         isRunningRef.current = true;
         setStatus("scanning");
       } catch (err) {
-        console.warn("Camera start failed", err);
+        console.warn("Camera failed", err);
       }
     }, 500);
-
     return () => {
       clearTimeout(timeoutId);
       if (scannerRef.current && isRunningRef.current) {
         scannerRef.current
           .stop()
-          .catch((err) => {})
+          .catch(() => {})
           .then(() => {
             scannerRef.current.clear();
             isRunningRef.current = false;
@@ -953,24 +1130,38 @@ function ScannerComponent({ user, showAlert }) {
 
   if (status === "success") {
     return (
-      <div style={{ textAlign: "center", animation: "fadeIn 0.5s" }}>
+      <div
+        style={{ textAlign: "center", animation: "fadeIn 0.5s", padding: 40 }}
+      >
         <div
           style={{
-            width: 80,
-            height: 80,
+            width: 100,
+            height: 100,
             background: colors.success,
             borderRadius: "50%",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            margin: "0 auto 20px auto",
-            fontSize: "2.5rem",
+            margin: "0 auto 24px auto",
+            fontSize: "3rem",
             color: "white",
+            boxShadow: "0 10px 30px rgba(16, 185, 129, 0.4)",
           }}
         >
           ✓
         </div>
-        <h3 style={{ color: colors.text, margin: 0 }}>เช็คชื่อเรียบร้อย!</h3>
+        <h3
+          style={{
+            color: colors.secondary,
+            margin: "0 0 8px 0",
+            fontSize: "1.5rem",
+          }}
+        >
+          เช็คชื่อเรียบร้อย!
+        </h3>
+        <p style={{ color: colors.textLight, marginBottom: 32 }}>
+          บันทึกข้อมูลเข้าระบบแล้ว
+        </p>
         <button
           onClick={() => setStatus("idle")}
           style={commonStyles.btnSecondary}
@@ -991,18 +1182,27 @@ function ScannerComponent({ user, showAlert }) {
           alignItems: "center",
         }}
       >
-        <div className="scanner-box">
-          <div id="reader" style={{ width: "100%", height: "100%" }}></div>
+        <div className="scanner-wrapper">
+          <div className="scan-overlay"></div>
+          <div className="scan-laser"></div>
+          <div id="reader"></div>
         </div>
-        <p style={{ marginTop: 20, color: colors.gray, fontSize: "0.9rem" }}>
-          กำลังค้นหากล้อง...
+        <p
+          style={{
+            marginTop: 24,
+            color: colors.textLight,
+            fontSize: "0.95rem",
+            animation: "pulse 2s infinite",
+          }}
+        >
+          กำลังค้นหา QR Code...
         </p>
         <button
           onClick={() => setStatus("idle")}
           style={{
             ...commonStyles.btnSecondary,
-            background: "#eee",
-            color: "#555",
+            background: "#F3F4F6",
+            color: "#6B7280",
           }}
         >
           ยกเลิก
@@ -1012,8 +1212,14 @@ function ScannerComponent({ user, showAlert }) {
   }
 
   return (
-    <div style={{ textAlign: "center", padding: 20 }}>
-      <div style={{ fontSize: "3rem", marginBottom: 10 }}>📷</div>
+    <div style={{ textAlign: "center", padding: "40px 20px" }}>
+      <div style={{ fontSize: "4rem", marginBottom: 16 }}>📷</div>
+      <h3 style={{ margin: "0 0 12px 0", color: colors.secondary }}>
+        พร้อมเช็คชื่อ?
+      </h3>
+      <p style={{ color: colors.textLight, marginBottom: 32 }}>
+        กดปุ่มด้านล่างเพื่อเปิดกล้อง
+      </p>
       <button
         onClick={() => setStatus("scanning")}
         style={commonStyles.btnPrimary}
@@ -1098,8 +1304,7 @@ function TeacherView({ initialView = "dashboard", showAlert }) {
         } catch (error) {
           showAlert("error", "ผิดพลาด", error.message);
         }
-      },
-      () => {}
+      }
     );
   };
 
@@ -1108,10 +1313,9 @@ function TeacherView({ initialView = "dashboard", showAlert }) {
   );
   const studentLogMap = {};
   logs.forEach((log) => (studentLogMap[log.studentUid] = log));
-
-  const presentList = [];
-  const lateList = [];
-  const absentList = [];
+  const presentList = [],
+    lateList = [],
+    absentList = [];
 
   filteredStudents.forEach((student) => {
     const log = studentLogMap[student.uid];
@@ -1125,9 +1329,7 @@ function TeacherView({ initialView = "dashboard", showAlert }) {
       };
       if (log.status === "late") lateList.push(item);
       else presentList.push(item);
-    } else {
-      absentList.push(student);
-    }
+    } else absentList.push(student);
   });
 
   const exportCSV = async () => {
@@ -1141,9 +1343,10 @@ function TeacherView({ initialView = "dashboard", showAlert }) {
         : "Present";
       csvContent += `${selectedDate},${item.displayTime},${item.name},${item.studentId},${item.level},${st}\n`;
     });
-    absentList.forEach((item) => {
-      csvContent += `${selectedDate},-,${item.name},${item.studentId},${item.level},Absent\n`;
-    });
+    absentList.forEach(
+      (item) =>
+        (csvContent += `${selectedDate},-,${item.name},${item.studentId},${item.level},Absent\n`)
+    );
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -1158,13 +1361,13 @@ function TeacherView({ initialView = "dashboard", showAlert }) {
 
   if (initialView === "dashboard") {
     return (
-      <div style={{ width: "100%", padding: "0 10px" }}>
+      <div style={{ width: "100%" }}>
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: 10,
-            marginBottom: 20,
+            gap: 16,
+            marginBottom: 24,
           }}
         >
           <div
@@ -1174,14 +1377,24 @@ function TeacherView({ initialView = "dashboard", showAlert }) {
               alignItems: "center",
             }}
           >
-            <h3 style={{ margin: 0, color: colors.secondary }}>ภาพรวม</h3>
+            <h3
+              style={{
+                margin: 0,
+                color: colors.secondary,
+                fontSize: "1.2rem",
+                fontWeight: 600,
+              }}
+            >
+              ภาพรวมประจำวัน
+            </h3>
             <input
               type="date"
               style={{
                 ...commonStyles.input,
                 width: "auto",
                 margin: 0,
-                padding: "5px 10px",
+                padding: "8px 12px",
+                fontSize: "0.9rem",
               }}
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
@@ -1193,11 +1406,11 @@ function TeacherView({ initialView = "dashboard", showAlert }) {
             onChange={(e) => setSelectedLevel(e.target.value)}
           >
             <option value="all">ทุกระดับชั้น</option>
-            <option value="ปวช.1">ปวช.1</option>
-            <option value="ปวช.2">ปวช.2</option>
-            <option value="ปวช.3">ปวช.3</option>
-            <option value="ปวส.1">ปวส.1</option>
-            <option value="ปวส.2">ปวส.2</option>
+            {["ปวช.1", "ปวช.2", "ปวช.3", "ปวส.1", "ปวส.2"].map((l) => (
+              <option key={l} value={l}>
+                {l}
+              </option>
+            ))}
           </select>
         </div>
         <div className="stat-grid">
@@ -1229,13 +1442,12 @@ function TeacherView({ initialView = "dashboard", showAlert }) {
         <button
           onClick={exportCSV}
           style={{
-            ...commonStyles.btnSmall,
+            ...commonStyles.btnPrimary,
             background: colors.success,
-            color: "white",
-            width: "100%",
+            marginTop: 8,
           }}
         >
-          📄 Export Report ({selectedDate})
+          📄 Export CSV Report
         </button>
       </div>
     );
@@ -1245,7 +1457,6 @@ function TeacherView({ initialView = "dashboard", showAlert }) {
     <div
       style={{
         width: "100%",
-        textAlign: "center",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -1254,27 +1465,37 @@ function TeacherView({ initialView = "dashboard", showAlert }) {
       <div
         style={{
           width: "100%",
-          marginBottom: 15,
+          marginBottom: 20,
           display: "flex",
           justifyContent: "flex-end",
-          gap: 10,
+          gap: 12,
         }}
       >
         <select
-          style={{ padding: 5, borderRadius: 5, border: "1px solid #ccc" }}
+          style={{
+            padding: "8px 12px",
+            borderRadius: 12,
+            border: `1px solid ${colors.border}`,
+            background: colors.white,
+          }}
           value={selectedLevel}
           onChange={(e) => setSelectedLevel(e.target.value)}
         >
           <option value="all">ทุกระดับชั้น</option>
-          <option value="ปวช.1">ปวช.1</option>
-          <option value="ปวช.2">ปวช.2</option>
-          <option value="ปวช.3">ปวช.3</option>
-          <option value="ปวส.1">ปวส.1</option>
-          <option value="ปวส.2">ปวส.2</option>
+          {["ปวช.1", "ปวช.2", "ปวช.3", "ปวส.1", "ปวส.2"].map((l) => (
+            <option key={l} value={l}>
+              {l}
+            </option>
+          ))}
         </select>
         <input
           type="date"
-          style={{ padding: 5, borderRadius: 5, border: "1px solid #ccc" }}
+          style={{
+            padding: "8px 12px",
+            borderRadius: 12,
+            border: `1px solid ${colors.border}`,
+            background: colors.white,
+          }}
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
         />
@@ -1283,29 +1504,37 @@ function TeacherView({ initialView = "dashboard", showAlert }) {
       {selectedDate === new Date().toISOString().split("T")[0] && (
         <div
           style={{
-            padding: 20,
+            padding: 32,
+            background: "linear-gradient(135deg, #fff 0%, #f9fafb 100%)",
             border: `2px dashed ${colors.primary}`,
-            borderRadius: 20,
-            marginBottom: 10,
+            borderRadius: 24,
+            marginBottom: 32,
+            boxShadow: "0 10px 30px rgba(0,0,0,0.03)",
           }}
         >
-          <QRCode value={qrValue} size={150} fgColor={colors.secondary} />
+          <QRCode value={qrValue} size={180} fgColor={colors.secondary} />
           <div
             style={{
-              fontSize: "1.2rem",
+              fontSize: "1.5rem",
               fontWeight: 700,
               color: colors.secondary,
-              letterSpacing: 2,
-              marginTop: 10,
+              letterSpacing: 4,
+              marginTop: 24,
+              fontFamily: "monospace",
             }}
           >
             {qrValue}
           </div>
           <p
-            style={{ color: colors.gray, marginBottom: 0, fontSize: "0.8rem" }}
+            style={{
+              color: colors.textLight,
+              marginBottom: 0,
+              fontSize: "0.95rem",
+              marginTop: 8,
+            }}
           >
             เปลี่ยนรหัสใน{" "}
-            <span style={{ color: colors.primary, fontWeight: 600 }}>
+            <span style={{ color: colors.primary, fontWeight: 700 }}>
               {timeLeft}
             </span>{" "}
             วินาที
@@ -1313,24 +1542,8 @@ function TeacherView({ initialView = "dashboard", showAlert }) {
         </div>
       )}
 
-      <div
-        style={{
-          width: "100%",
-          background: "#f9f9f9",
-          borderRadius: 15,
-          padding: 15,
-          textAlign: "left",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            borderBottom: "1px solid #ddd",
-            marginBottom: 10,
-            overflowX: "auto",
-            gap: 5,
-          }}
-        >
+      <div style={{ width: "100%" }}>
+        <div className="tab-container">
           <button
             className={`tab-btn ${viewTab === "present" ? "active" : ""}`}
             onClick={() => setViewTab("present")}
@@ -1357,117 +1570,119 @@ function TeacherView({ initialView = "dashboard", showAlert }) {
           </button>
         </div>
 
-        <div style={{ maxHeight: 300, overflowY: "auto" }}>
+        <div style={{ maxHeight: 400, overflowY: "auto", paddingRight: 4 }}>
           {viewTab === "present" &&
             (presentList.length > 0 ? (
-              presentList.map((item) => (
-                <div key={item.uid} className="student-item">
-                  <div>
-                    <span style={{ fontWeight: 600 }}>{item.name}</span>
-                    <div style={{ fontSize: "0.8rem", color: colors.gray }}>
-                      ชั้น: {item.level} เลขที่: {item.studentId}
-                    </div>
-                  </div>
-                  <span style={{ color: colors.success }}>
-                    ✓ {item.displayTime}
-                  </span>
-                </div>
+              presentList.map((i) => (
+                <StudentRow key={i.uid} item={i} status="present" />
               ))
             ) : (
-              <p
-                style={{
-                  textAlign: "center",
-                  color: colors.gray,
-                  fontSize: "0.8rem",
-                }}
-              >
-                ว่างเปล่า
-              </p>
+              <EmptyState />
             ))}
           {viewTab === "late" &&
             (lateList.length > 0 ? (
-              lateList.map((item) => (
-                <div key={item.uid} className="student-item">
-                  <div>
-                    <span style={{ fontWeight: 600 }}>{item.name}</span>
-                    <div style={{ fontSize: "0.8rem", color: colors.gray }}>
-                      ชั้น: {item.level} เลขที่: {item.studentId}
-                    </div>
-                  </div>
-                  <span style={{ color: colors.warning }}>
-                    สาย {item.displayTime}
-                  </span>
-                </div>
+              lateList.map((i) => (
+                <StudentRow key={i.uid} item={i} status="late" />
               ))
             ) : (
-              <p
-                style={{
-                  textAlign: "center",
-                  color: colors.gray,
-                  fontSize: "0.8rem",
-                }}
-              >
-                ไม่มีคนสาย
-              </p>
+              <EmptyState msg="ไม่มีคนสาย" />
             ))}
           {viewTab === "absent" &&
             (absentList.length > 0 ? (
-              absentList.map((item) => (
-                <div key={item.uid} className="student-item">
-                  <div>
-                    <span style={{ fontWeight: 600 }}>{item.name}</span>
-                    <div style={{ fontSize: "0.8rem", color: colors.gray }}>
-                      ชั้น: {item.level} เลขที่: {item.studentId}
-                    </div>
-                  </div>
-                  <span style={{ color: colors.error }}>ขาด</span>
-                </div>
+              absentList.map((i) => (
+                <StudentRow key={i.uid} item={i} status="absent" />
               ))
             ) : (
-              <p
-                style={{
-                  textAlign: "center",
-                  color: colors.success,
-                  fontSize: "0.8rem",
-                }}
-              >
-                มาครบ!
-              </p>
+              <EmptyState msg="มาครบทุกคน!" />
             ))}
           {viewTab === "all" &&
             (filteredStudents.length > 0 ? (
-              filteredStudents.map((item) => (
-                <div key={item.uid} className="student-item">
+              filteredStudents.map((i) => (
+                <div key={i.uid} className="list-item">
                   <div>
-                    <span style={{ fontWeight: 600 }}>{item.name}</span>
-                    <div style={{ fontSize: "0.8rem", color: colors.gray }}>
-                      ชั้น: {item.level} เลขที่: {item.studentId}
+                    <span style={{ fontWeight: 600, color: colors.secondary }}>
+                      {i.name}
+                    </span>
+                    <div
+                      style={{ fontSize: "0.85rem", color: colors.textLight }}
+                    >
+                      ชั้น: {i.level} เลขที่: {i.studentId}
                     </div>
                   </div>
                   <button
-                    className="delete-btn"
-                    onClick={() => handleDeleteUser(item.uid, item.name)}
+                    onClick={() => handleDeleteUser(i.uid, i.name)}
+                    style={{
+                      background: colors.errorBg,
+                      color: colors.error,
+                      border: "none",
+                      padding: "8px 12px",
+                      borderRadius: 10,
+                      cursor: "pointer",
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                      transition: "0.2s",
+                    }}
                   >
                     ลบ 🗑️
                   </button>
                 </div>
               ))
             ) : (
-              <p
-                style={{
-                  textAlign: "center",
-                  color: colors.gray,
-                  fontSize: "0.8rem",
-                }}
-              >
-                ไม่มีนักเรียนในระบบ
-              </p>
+              <EmptyState msg="ไม่มีนักเรียน" />
             ))}
         </div>
       </div>
     </div>
   );
 }
+
+const StudentRow = ({ item, status }) => {
+  let bg = colors.successBg;
+  let text = `✓ ${item.displayTime || ""}`;
+  let color = colors.success;
+  if (status === "late") {
+    bg = colors.warningBg;
+    color = colors.warning;
+    text = `สาย ${item.displayTime}`;
+  }
+  if (status === "absent") {
+    bg = colors.errorBg;
+    color = colors.error;
+    text = "ขาด";
+  }
+  return (
+    <div className="list-item">
+      <div>
+        <span style={{ fontWeight: 600, color: colors.secondary }}>
+          {item.name}
+        </span>
+        <div style={{ fontSize: "0.85rem", color: colors.textLight }}>
+          ชั้น: {item.level} เลขที่: {item.studentId}
+        </div>
+      </div>
+      <span
+        style={{
+          color,
+          background: bg,
+          padding: "4px 12px",
+          borderRadius: 20,
+          fontSize: "0.8rem",
+          fontWeight: 600,
+        }}
+      >
+        {text}
+      </span>
+    </div>
+  );
+};
+const EmptyState = ({ msg = "ว่างเปล่า" }) => (
+  <div style={{ textAlign: "center", color: colors.textLight, padding: 40 }}>
+    <span style={{ fontSize: "2rem", display: "block", marginBottom: 8 }}>
+      📭
+    </span>
+    {msg}
+  </div>
+);
 
 function LoginPage({ onSwitch, showAlert }) {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -1487,7 +1702,7 @@ function LoginPage({ onSwitch, showAlert }) {
     showAlert(
       "input",
       "ลืมรหัสผ่าน?",
-      "กรุณากรอกอีเมลของคุณเพื่อรับลิงก์รีเซ็ตรหัสผ่าน:",
+      "กรุณากรอกอีเมล:",
       async (email) => {
         if (!email) return;
         try {
@@ -1503,7 +1718,7 @@ function LoginPage({ onSwitch, showAlert }) {
   };
 
   return (
-    <div style={{ textAlign: "left" }}>
+    <div style={{ textAlign: "left", width: "100%" }}>
       <input
         style={commonStyles.input}
         placeholder="อีเมล"
@@ -1515,12 +1730,13 @@ function LoginPage({ onSwitch, showAlert }) {
         placeholder="รหัสผ่าน"
         onChange={(e) => setForm({ ...form, password: e.target.value })}
       />
-      <div style={{ textAlign: "right", marginBottom: 10 }}>
+      <div style={{ textAlign: "right", marginBottom: 16 }}>
         <span
           style={{
-            fontSize: "0.8rem",
+            fontSize: "0.9rem",
             color: colors.primary,
             cursor: "pointer",
+            fontWeight: 600,
           }}
           onClick={handleForgotPassword}
         >
@@ -1532,19 +1748,19 @@ function LoginPage({ onSwitch, showAlert }) {
         onClick={handleLogin}
         disabled={loading}
       >
-        {loading ? "..." : "เข้าสู่ระบบ"}
+        {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
       </button>
       <p
         style={{
           textAlign: "center",
-          marginTop: 20,
-          color: colors.gray,
-          fontSize: "0.9rem",
+          marginTop: 24,
+          color: colors.textLight,
+          fontSize: "0.95rem",
         }}
       >
         ยังไม่มีบัญชี?{" "}
         <span
-          style={{ color: colors.primary, cursor: "pointer", fontWeight: 600 }}
+          style={{ color: colors.primary, cursor: "pointer", fontWeight: 700 }}
           onClick={onSwitch}
         >
           ลงทะเบียน
@@ -1566,6 +1782,8 @@ function RegisterPage({ onRegisterSuccess, onSwitch, showAlert }) {
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
+    if (!form.email || !form.password || !form.name)
+      return showAlert("warning", "ข้อมูลไม่ครบ", "กรุณากรอกข้อมูลให้ครบถ้วน");
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(
@@ -1573,7 +1791,6 @@ function RegisterPage({ onRegisterSuccess, onSwitch, showAlert }) {
         form.email,
         form.password
       );
-      const user = userCredential.user;
       const userData = {
         name: form.name,
         role: form.role,
@@ -1585,10 +1802,8 @@ function RegisterPage({ onRegisterSuccess, onSwitch, showAlert }) {
         userData.level = form.level;
         userData.studentId = form.studentId;
       }
-      await setDoc(doc(db, "users", user.uid), userData);
-      showAlert("success", "สำเร็จ", "สมัครสมาชิกเรียบร้อย", () =>
-        onRegisterSuccess()
-      );
+      await setDoc(doc(db, "users", userCredential.user.uid), userData);
+      showAlert("success", "สำเร็จ", "สมัครสมาชิกเรียบร้อย", onRegisterSuccess);
     } catch (error) {
       showAlert("error", "ผิดพลาด", error.message);
     }
@@ -1596,7 +1811,7 @@ function RegisterPage({ onRegisterSuccess, onSwitch, showAlert }) {
   };
 
   return (
-    <div style={{ textAlign: "left" }}>
+    <div style={{ textAlign: "left", width: "100%" }}>
       <input
         style={commonStyles.input}
         placeholder="ชื่อ-นามสกุล"
@@ -1613,7 +1828,18 @@ function RegisterPage({ onRegisterSuccess, onSwitch, showAlert }) {
         placeholder="รหัสผ่าน (6 ตัวขึ้นไป)"
         onChange={(e) => setForm({ ...form, password: e.target.value })}
       />
-      <label style={{ fontSize: "0.9rem", fontWeight: 600 }}>สถานะ</label>
+      <label
+        style={{
+          fontSize: "0.9rem",
+          fontWeight: 600,
+          color: colors.secondary,
+          marginTop: 12,
+          display: "block",
+          marginBottom: 4,
+        }}
+      >
+        สถานะ
+      </label>
       <select
         style={commonStyles.input}
         onChange={(e) => setForm({ ...form, role: e.target.value })}
@@ -1622,47 +1848,73 @@ function RegisterPage({ onRegisterSuccess, onSwitch, showAlert }) {
         <option value="teacher">อาจารย์</option>
       </select>
       {form.role === "student" && (
-        <>
-          <label style={{ fontSize: "0.9rem", fontWeight: 600 }}>
-            ระดับชั้น
-          </label>
-          <select
-            style={commonStyles.input}
-            onChange={(e) => setForm({ ...form, level: e.target.value })}
-          >
-            <option value="ปวช.1">ปวช.1</option>
-            <option value="ปวช.2">ปวช.2</option>
-            <option value="ปวช.3">ปวช.3</option>
-            <option value="ปวส.1">ปวส.1</option>
-            <option value="ปวส.2">ปวส.2</option>
-          </select>
-          <label style={{ fontSize: "0.9rem", fontWeight: 600 }}>เลขที่</label>
-          <input
-            style={commonStyles.input}
-            type="number"
-            placeholder="เช่น 15"
-            onChange={(e) => setForm({ ...form, studentId: e.target.value })}
-          />
-        </>
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
+        >
+          <div>
+            <label
+              style={{
+                fontSize: "0.9rem",
+                fontWeight: 600,
+                color: colors.secondary,
+                marginTop: 8,
+                display: "block",
+                marginBottom: 4,
+              }}
+            >
+              ระดับชั้น
+            </label>
+            <select
+              style={commonStyles.input}
+              onChange={(e) => setForm({ ...form, level: e.target.value })}
+            >
+              {["ปวช.1", "ปวช.2", "ปวช.3", "ปวส.1", "ปวส.2"].map((l) => (
+                <option key={l} value={l}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label
+              style={{
+                fontSize: "0.9rem",
+                fontWeight: 600,
+                color: colors.secondary,
+                marginTop: 8,
+                display: "block",
+                marginBottom: 4,
+              }}
+            >
+              เลขที่
+            </label>
+            <input
+              style={commonStyles.input}
+              type="number"
+              placeholder="เช่น 15"
+              onChange={(e) => setForm({ ...form, studentId: e.target.value })}
+            />
+          </div>
+        </div>
       )}
       <button
         style={commonStyles.btnPrimary}
         onClick={handleRegister}
         disabled={loading}
       >
-        {loading ? "..." : "สมัครสมาชิก"}
+        {loading ? "กำลังสมัคร..." : "สมัครสมาชิก"}
       </button>
       <p
         style={{
           textAlign: "center",
-          marginTop: 20,
-          color: colors.gray,
-          fontSize: "0.9rem",
+          marginTop: 24,
+          color: colors.textLight,
+          fontSize: "0.95rem",
         }}
       >
         กลับไป{" "}
         <span
-          style={{ color: colors.primary, cursor: "pointer", fontWeight: 600 }}
+          style={{ color: colors.primary, cursor: "pointer", fontWeight: 700 }}
           onClick={onSwitch}
         >
           เข้าสู่ระบบ
@@ -1672,110 +1924,101 @@ function RegisterPage({ onRegisterSuccess, onSwitch, showAlert }) {
   );
 }
 
-function NavItem({ icon, label, active, onClick }) {
-  return (
-    <div
-      onClick={onClick}
+const NavItem = ({ icon, label, active, onClick }) => (
+  <div
+    onClick={onClick}
+    style={{
+      padding: "14px 18px",
+      borderRadius: 16,
+      marginBottom: 8,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: 16,
+      background: active ? colors.primaryGradient : "transparent",
+      color: active ? "white" : colors.textLight,
+      fontWeight: active ? 600 : 500,
+      transition: "all 0.3s",
+      boxShadow: active ? "0 8px 20px -4px rgba(124, 58, 237, 0.3)" : "none",
+    }}
+  >
+    <span style={{ fontSize: "1.4rem" }}>{icon}</span> {label}
+  </div>
+);
+
+const MobileNavItem = ({ icon, label, active, onClick }) => (
+  <div
+    onClick={onClick}
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 4,
+      opacity: active ? 1 : 0.6,
+      transition: "0.2s",
+      cursor: "pointer",
+      transform: active ? "scale(1.1)" : "scale(1)",
+    }}
+  >
+    <span
       style={{
-        padding: "12px 16px",
-        borderRadius: 12,
-        marginBottom: 8,
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        background: active ? colors.primary : "transparent",
-        color: active ? "white" : colors.text,
-        fontWeight: active ? 600 : 500,
-        transition: "0.2s",
+        fontSize: "1.5rem",
+        color: active ? colors.primary : colors.textLight,
       }}
     >
-      <span>{icon}</span> {label}
-    </div>
-  );
-}
-function MobileNavItem({ icon, label, active, onClick }) {
-  return (
-    <div
-      onClick={onClick}
+      {icon}
+    </span>
+    <span
       style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 4,
-        opacity: active ? 1 : 0.6,
+        fontSize: "0.75rem",
+        fontWeight: 600,
+        color: active ? colors.primary : colors.textLight,
       }}
     >
-      <span
-        style={{
-          fontSize: "1.5rem",
-          color: active ? colors.primary : colors.text,
-        }}
-      >
-        {icon}
-      </span>
-      <span
-        style={{
-          fontSize: "0.7rem",
-          fontWeight: 600,
-          color: active ? colors.primary : colors.text,
-        }}
-      >
-        {label}
-      </span>
-    </div>
-  );
-}
+      {label}
+    </span>
+  </div>
+);
+
 const commonStyles = {
   input: {
     width: "100%",
-    padding: "14px",
-    margin: "8px 0",
-    borderRadius: 12,
-    border: "1px solid #E2E8F0",
-    background: "#F7FAFC",
+    padding: "14px 16px",
+    margin: "6px 0",
+    borderRadius: 14,
+    border: "2px solid #E5E7EB",
+    background: "#F9FAFB",
     fontSize: "1rem",
     outline: "none",
     boxSizing: "border-box",
+    transition: "0.3s",
+    color: colors.text,
+    fontFamily: "Prompt",
   },
   btnPrimary: {
     width: "100%",
-    padding: "14px",
-    background: colors.primary,
+    padding: "16px",
+    background: colors.primaryGradient,
     color: "white",
     border: "none",
-    borderRadius: 12,
-    fontSize: "1rem",
+    borderRadius: 14,
+    fontSize: "1.05rem",
     fontWeight: 600,
     cursor: "pointer",
-    marginTop: 16,
-    boxShadow: "0 4px 12px rgba(108, 99, 255, 0.3)",
-  },
-  btnGoogle: {
-    width: "100%",
-    padding: "14px",
-    background: colors.white,
-    color: colors.text,
-    border: "1px solid #E2E8F0",
-    borderRadius: 12,
-    fontSize: "1rem",
-    fontWeight: 600,
-    cursor: "pointer",
-    marginTop: 10,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
+    marginTop: 24,
+    boxShadow: "0 10px 20px -5px rgba(124, 58, 237, 0.3)",
+    transition: "transform 0.2s, box-shadow 0.2s",
   },
   btnSecondary: {
     padding: "12px 24px",
-    background: colors.primaryLight,
-    color: colors.primary,
+    background: "#F3F4F6",
+    color: "#4B5563",
     border: "none",
-    borderRadius: 10,
+    borderRadius: 12,
     fontSize: "0.95rem",
     fontWeight: 600,
     cursor: "pointer",
+    transition: "0.2s",
   },
   btnSmall: {
     padding: "8px 16px",
@@ -1784,15 +2027,6 @@ const commonStyles = {
     cursor: "pointer",
     fontWeight: 600,
     fontSize: "0.85rem",
-  },
-  statusBadge: {
-    padding: "4px 8px",
-    borderRadius: 12,
-    fontSize: "0.75rem",
-    fontWeight: 600,
-    color: "white",
-    display: "inline-block",
-    minWidth: 60,
-    textAlign: "center",
+    transition: "0.2s",
   },
 };
