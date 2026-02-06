@@ -11,6 +11,7 @@ import {
   setDoc,
   getDoc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
   query,
   where,
@@ -40,22 +41,23 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// --- Theme: White & Ocean Blue ---
 const colors = {
-  primary: "#7C3AED",
-  primaryLight: "#F5F3FF",
-  primaryGradient: "linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%)",
-  secondary: "#1F2937",
+  primary: "#2563EB", // น้ำเงินสด (Royal Blue)
+  primaryLight: "#EFF6FF", // ฟ้าอ่อนเกือบขาว
+  primaryGradient: "linear-gradient(135deg, #2563EB 0%, #00B4D8 100%)", // ไล่สีน้ำเงินไปฟ้าทะเล
+  secondary: "#1E293B", // สีดำอมน้ำเงิน (Slate Dark)
   success: "#10B981",
   successBg: "#D1FAE5",
   warning: "#F59E0B",
   warningBg: "#FEF3C7",
   error: "#EF4444",
   errorBg: "#FEE2E2",
-  background: "#F3F4F6",
+  background: "#F8FAFC", // พื้นหลังขาวอมเทาฟ้า (Cool White)
   white: "#FFFFFF",
-  text: "#374151",
-  textLight: "#6B7280",
-  border: "#E5E7EB",
+  text: "#334155", // สีเทาเข้ม
+  textLight: "#64748B", // สีเทากลาง
+  border: "#E2E8F0", // เส้นขอบสีเทาอ่อน
 };
 
 const logoPath = "/logo.jpg";
@@ -82,6 +84,7 @@ const GlobalStyle = () => (
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     @keyframes scanLine { 0% { top: 0%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
     
     .app-container { display: flex; min-height: 100vh; background: ${colors.background}; }
     
@@ -96,7 +99,7 @@ const GlobalStyle = () => (
       top: 0; 
       height: 100vh; 
       z-index: 50;
-      box-shadow: 4px 0 24px rgba(0,0,0,0.02);
+      box-shadow: 4px 0 24px rgba(148, 163, 184, 0.05);
     }
 
     .main-content { 
@@ -115,7 +118,7 @@ const GlobalStyle = () => (
       background: ${colors.white}; 
       border-radius: 24px; 
       padding: 32px; 
-      box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08); 
+      box-shadow: 0 10px 30px -10px rgba(37, 99, 235, 0.08); 
       border: 1px solid ${colors.white};
     }
 
@@ -129,7 +132,7 @@ const GlobalStyle = () => (
       border-radius: 24px;
       overflow: hidden;
       background: black;
-      box-shadow: 0 20px 50px -12px rgba(0,0,0,0.3);
+      box-shadow: 0 20px 50px -12px rgba(37, 99, 235, 0.25);
     }
     
     .scan-overlay {
@@ -138,8 +141,8 @@ const GlobalStyle = () => (
     }
     
     .scan-laser {
-      position: absolute; width: 100%; height: 2px; background: ${colors.success};
-      box-shadow: 0 0 15px ${colors.success}; z-index: 11; animation: scanLine 2s linear infinite;
+      position: absolute; width: 100%; height: 3px; background: #00B4D8;
+      box-shadow: 0 0 15px #00B4D8; z-index: 11; animation: scanLine 2s linear infinite;
     }
 
     #reader { width: 100%; height: 100%; }
@@ -151,12 +154,12 @@ const GlobalStyle = () => (
     .stat-card { 
       background: ${colors.white}; padding: 20px; border-radius: 20px; text-align: center; 
       border: 1px solid ${colors.border}; transition: transform 0.2s; 
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 4px 6px -1px rgba(148, 163, 184, 0.1);
     }
-    .stat-card:hover { transform: translateY(-4px); }
+    .stat-card:hover { transform: translateY(-4px); border-color: ${colors.primary}; }
 
     .custom-modal-overlay { 
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); 
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(30, 41, 59, 0.6); 
       backdrop-filter: blur(4px); display: flex; alignItems: center; justifyContent: center; z-index: 9999; 
       animation: fadeIn 0.2s; 
     }
@@ -175,11 +178,11 @@ const GlobalStyle = () => (
       background: ${colors.white}; border-radius: 16px; border: 1px solid ${colors.border};
       transition: all 0.2s ease;
     }
-    .list-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+    .list-item:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(37, 99, 235, 0.05); border-color: ${colors.primaryLight}; }
 
-    .tab-container { display: flex; background: ${colors.primaryLight}; padding: 6px; border-radius: 16px; margin-bottom: 24px; }
+    .tab-container { display: flex; background: ${colors.white}; padding: 6px; border-radius: 16px; margin-bottom: 24px; border: 1px solid ${colors.border}; }
     .tab-btn { flex: 1; padding: 10px; border: none; background: transparent; color: ${colors.textLight}; font-weight: 600; border-radius: 12px; cursor: pointer; transition: 0.3s; font-family: 'Prompt'; }
-    .tab-btn.active { background: ${colors.white}; color: ${colors.primary}; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .tab-btn.active { background: ${colors.primaryLight}; color: ${colors.primary}; }
 
     @media (max-width: 768px) {
       .app-container { flex-direction: column; }
@@ -188,10 +191,10 @@ const GlobalStyle = () => (
       
       .mobile-nav { 
         display: flex; position: fixed; bottom: 20px; left: 20px; right: 20px; 
-        background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); 
+        background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px); 
         padding: 12px 24px; justify-content: space-between; align-items: center; 
-        z-index: 1000; border-radius: 24px; border: 1px solid rgba(255,255,255,0.5);
-        box-shadow: 0 10px 40px -10px rgba(0,0,0,0.15);
+        z-index: 1000; border-radius: 24px; border: 1px solid rgba(255,255,255,0.8);
+        box-shadow: 0 10px 40px -10px rgba(30, 41, 59, 0.15);
       }
       
       .scan-btn-wrapper {
@@ -265,6 +268,7 @@ const CustomModal = ({
             margin: "0 0 8px 0",
             color: colors.secondary,
             fontSize: "1.3rem",
+            fontWeight: 700,
           }}
         >
           {title}
@@ -429,7 +433,7 @@ export default function App() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: 20,
+            padding: 24,
             background: colors.background,
           }}
         >
@@ -517,7 +521,7 @@ function DashboardLayout({ user, setUser, onLogout, showAlert }) {
               width: 56,
               objectFit: "cover",
               borderRadius: 14,
-              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
             }}
           />
           <div>
@@ -587,7 +591,7 @@ function DashboardLayout({ user, setUser, onLogout, showAlert }) {
                 width: 48,
                 objectFit: "cover",
                 borderRadius: 12,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
               }}
             />
             <div>
@@ -651,6 +655,7 @@ function DashboardLayout({ user, setUser, onLogout, showAlert }) {
                     justifyContent: "center",
                     margin: "0 auto 24px",
                     fontSize: "3rem",
+                    color: colors.primary,
                   }}
                 >
                   🎓
@@ -729,7 +734,7 @@ function DashboardLayout({ user, setUser, onLogout, showAlert }) {
           active={activeTab === "dashboard"}
           onClick={() => setActiveTab("dashboard")}
         />
-        <div className="scan-btn-wrapper">
+        <div className="scan-btn-float">
           <div
             onClick={() => setActiveTab("checkin")}
             style={{
@@ -742,7 +747,7 @@ function DashboardLayout({ user, setUser, onLogout, showAlert }) {
               justifyContent: "center",
               color: "white",
               fontSize: "1.8rem",
-              boxShadow: "0 10px 25px rgba(124, 58, 237, 0.4)",
+              boxShadow: "0 10px 25px rgba(37, 99, 235, 0.4)",
               cursor: "pointer",
               transition: "transform 0.2s",
             }}
@@ -1201,8 +1206,8 @@ function ScannerComponent({ user, showAlert }) {
           onClick={() => setStatus("idle")}
           style={{
             ...commonStyles.btnSecondary,
-            background: "#F3F4F6",
-            color: "#6B7280",
+            background: "#F1F5F9",
+            color: "#64748B",
           }}
         >
           ยกเลิก
@@ -1505,7 +1510,7 @@ function TeacherView({ initialView = "dashboard", showAlert }) {
         <div
           style={{
             padding: 32,
-            background: "linear-gradient(135deg, #fff 0%, #f9fafb 100%)",
+            background: "linear-gradient(135deg, #fff 0%, #F8FAFC 100%)",
             border: `2px dashed ${colors.primary}`,
             borderRadius: 24,
             marginBottom: 32,
@@ -1939,7 +1944,7 @@ const NavItem = ({ icon, label, active, onClick }) => (
       color: active ? "white" : colors.textLight,
       fontWeight: active ? 600 : 500,
       transition: "all 0.3s",
-      boxShadow: active ? "0 8px 20px -4px rgba(124, 58, 237, 0.3)" : "none",
+      boxShadow: active ? "0 8px 20px -4px rgba(37, 99, 235, 0.3)" : "none",
     }}
   >
     <span style={{ fontSize: "1.4rem" }}>{icon}</span> {label}
@@ -1986,8 +1991,8 @@ const commonStyles = {
     padding: "14px 16px",
     margin: "6px 0",
     borderRadius: 14,
-    border: "2px solid #E5E7EB",
-    background: "#F9FAFB",
+    border: "2px solid #E2E8F0",
+    background: "#F8FAFC",
     fontSize: "1rem",
     outline: "none",
     boxSizing: "border-box",
@@ -2006,13 +2011,13 @@ const commonStyles = {
     fontWeight: 600,
     cursor: "pointer",
     marginTop: 24,
-    boxShadow: "0 10px 20px -5px rgba(124, 58, 237, 0.3)",
+    boxShadow: "0 10px 20px -5px rgba(37, 99, 235, 0.3)",
     transition: "transform 0.2s, box-shadow 0.2s",
   },
   btnSecondary: {
     padding: "12px 24px",
-    background: "#F3F4F6",
-    color: "#4B5563",
+    background: "#F1F5F9",
+    color: "#475569",
     border: "none",
     borderRadius: 12,
     fontSize: "0.95rem",
