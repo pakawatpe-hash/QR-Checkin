@@ -42,8 +42,15 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 const colors = {
-  primary: "#6C63FF",
-  primaryLight: "#EEEDFF",
+  primary: "#7C3AED", 
+  primaryLight: "#F5F3FF",
+  primaryGradient: "linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)", 
+  success: "#10B981",
+  successLight: "#D1FAE5",
+  warning: "#F59E0B",
+  warningLight: "#FEF3C7",
+  error: "#EF4444",
+  errorLight: "#FEE2E2",
   secondary: "#2F2E41",
   success: "#00C851",
   warning: "#FF9800",
